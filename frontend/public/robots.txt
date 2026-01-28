@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://artstudio.example.com/sitemap.xml
+
+# Disallow admin panel
+Disallow: /admin/
+Disallow: /api/
+Disallow: /swagger/
+Disallow: /redoc/

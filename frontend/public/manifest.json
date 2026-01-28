@@ -1,0 +1,68 @@
+{
+  "short_name": "АртСтудия",
+  "name": "АртСтудия - Система управления проектами",
+  "description": "Веб-приложение для управления проектами креативного агентства АртСтудия",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "maskable-icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ru",
+  "categories": ["business", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Новый проект",
+      "short_name": "Проект",
+      "description": "Создать новый проект",
+      "url": "/projects/new",
+      "icons": [{ "src": "shortcut-icon.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Новая задача",
+      "short_name": "Задача",
+      "description": "Создать новую задачу",
+      "url": "/tasks/new",
+      "icons": [{ "src": "shortcut-icon.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot-desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Главная панель"
+    },
+    {
+      "src": "screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Мобильный вид"
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1976d2" />
+    <meta name="description" content="Система управления проектами креативного агентства АртСтудия" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Title -->
+    <title>АртСтудия - Управление проектами</title>
+    
+    <!-- SEO мета-теги -->
+    <meta name="keywords" content="управление проектами, задачи, CRM, АртСтудия, дизайн, агентство">
+    <meta property="og:title" content="АртСтудия - Управление проектами">
+    <meta property="og:description" content="Система управления проектами для креативного агентства">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons" as="style">
+    <link rel="preload" href="https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2" as="font" type="font/woff2" crossorigin>
+  </head>
+  <body>
+    <noscript>
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        padding: 20px;
+        text-align: center;
+      ">
+        <div>
+          <h1 style="color: #1976d2; margin-bottom: 20px;">
+            АртСтудия - Управление проектами
+          </h1>
+          <p style="font-size: 18px; margin-bottom: 30px;">
+            Для работы приложения требуется JavaScript. Пожалуйста, включите JavaScript в настройках браузера.
+          </p>
+          <div style="color: #666; font-size: 14px;">
+            <p>Если вы не знаете как включить JavaScript:</p>
+            <ol style="text-align: left; display: inline-block; margin-top: 10px;">
+              <li>Откройте настройки браузера</li>
+              <li>Найдите раздел "Конфиденциальность и безопасность"</li>
+              <li>Включите JavaScript</li>
+              <li>Перезагрузите страницу</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </noscript>
+    
+    <!-- App root -->
+    <div id="root"></div>
+    
+    <!-- Loading state -->
+    <div id="loading" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+      transition: opacity 0.3s ease;
+    ">
+      <div style="
+        width: 60px;
+        height: 60px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #1976d2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      "></div>
+      <h2 style="color: #1976d2; margin-bottom: 10px;">АртСтудия</h2>
+      <p style="color: #666;">Загрузка системы управления проектами...</p>
+      <style>
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      </style>
+    </div>
+    
+    <!-- Service Worker -->
+    <script>
+      // Hide loading screen when app loads
+      window.addEventListener('load', function() {
+        const loading = document.getElementById('loading');
+        if (loading) {
+          setTimeout(() => {
+            loading.style.opacity = '0';
+            setTimeout(() => {
+              loading.style.display = 'none';
+            }, 300);
+          }, 500);
+        }
+      });
+      
+      // Service worker registration
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('ServiceWorker registration successful');
+            })
+            .catch(function(err) {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
