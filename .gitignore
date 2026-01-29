@@ -1,0 +1,2 @@
+echo "node_modules/" >> .gitignore
+echo "frontend/node_modules/" >> .gitignore

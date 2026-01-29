@@ -48,9 +48,11 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ru } from 'date-fns/locale';
+import { useAuth } from '../../context/AuthContext'; // Добавляем использование контекста аутентификации
 
 const ReportList = () => {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Получаем информацию о пользователе
   const [reports, setReports] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -127,7 +129,7 @@ const ReportList = () => {
   };
 
   const handleDelete = async () => {
-    if (selectedReport) {
+    if (selectedReport && user?.role === 'manager') { // Только менеджер может удалять
       try {
         await reportsAPI.delete(selectedReport.id);
         fetchReports();
@@ -140,7 +142,7 @@ const ReportList = () => {
   };
 
   const handleArchive = async () => {
-    if (selectedReport) {
+    if (selectedReport && user?.role === 'manager') { // Только менеджер может архивировать
       try {
         await reportsAPI.archive(selectedReport.id);
         fetchReports();
@@ -153,60 +155,67 @@ const ReportList = () => {
   };
 
   const handleRestore = async (reportId) => {
-    try {
-      await reportsAPI.restore(reportId);
-      fetchReports();
-    } catch (error) {
-      console.error('Error restoring report:', error);
-      setError('Не удалось восстановить отчет');
+    if (user?.role === 'manager') { // Только менеджер может восстанавливать
+      try {
+        await reportsAPI.restore(reportId);
+        fetchReports();
+      } catch (error) {
+        console.error('Error restoring report:', error);
+        setError('Не удалось восстановить отчет');
+      }
     }
   };
 
   const handleGenerate = async () => {
-  try {
-    setGenerating(true);
-    setError(null);
-    
-    // Форматируем даты в yyyy-MM-dd
-    const formatDateToISO = (date) => {
-      if (!date) return '';
-      const d = new Date(date);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    const formattedData = {
-      name: reportForm.name || `Отчет по ${getReportTypeLabel(reportForm.report_type)}`,
-      report_type: reportForm.report_type,
-      start_date: formatDateToISO(reportForm.start_date),
-      end_date: formatDateToISO(reportForm.end_date),
-    };
-
-    console.log('Sending data:', formattedData); 
-    
-    const response = await reportsAPI.generate(formattedData);
-    
-    if (response) {
-      setGenerateDialogOpen(false);
-      fetchReports();
-      setReportForm({
-        name: '',
-        report_type: 'projects',
-        start_date: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-        end_date: new Date(),
-        projects: [],
-      });
+    if (user?.role !== 'manager') { // Только менеджер может создавать отчеты
+      setError('У вас нет прав для создания отчетов');
+      return;
     }
-  } catch (error) {
-    console.error('Error generating report:', error);
-    console.error('Error details:', error.response?.data); 
-    setError(error.response?.data?.error || error.response?.data || 'Не удалось сгенерировать отчет');
-  } finally {
-    setGenerating(false);
-  }
-};
+    
+    try {
+      setGenerating(true);
+      setError(null);
+      
+      // Форматируем даты в yyyy-MM-dd
+      const formatDateToISO = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const formattedData = {
+        name: reportForm.name || `Отчет по ${getReportTypeLabel(reportForm.report_type)}`,
+        report_type: reportForm.report_type,
+        start_date: formatDateToISO(reportForm.start_date),
+        end_date: formatDateToISO(reportForm.end_date),
+      };
+
+      console.log('Sending data:', formattedData); 
+      
+      const response = await reportsAPI.generate(formattedData);
+      
+      if (response) {
+        setGenerateDialogOpen(false);
+        fetchReports();
+        setReportForm({
+          name: '',
+          report_type: 'projects',
+          start_date: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
+          end_date: new Date(),
+          projects: [],
+        });
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      console.error('Error details:', error.response?.data); 
+      setError(error.response?.data?.error || error.response?.data || 'Не удалось сгенерировать отчет');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const getReportTypeLabel = (type) => {
     const labels = {
@@ -255,13 +264,16 @@ const ReportList = () => {
           >
             Обновить
           </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setGenerateDialogOpen(true)}
-          >
-            Создать отчет
-          </Button>
+          {/* Кнопка создания отчета показывается только менеджерам */}
+          {user?.role === 'manager' && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setGenerateDialogOpen(true)}
+            >
+              Создать отчет
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -284,7 +296,10 @@ const ReportList = () => {
         >
           <Tab label={`Мои отчеты (${myReports.length})`} />
           <Tab label={`Шаблоны (${templates.length})`} />
-          <Tab label={`Архив (${archivedReports.length})`} />
+          {/* Вкладка Архив показывается только менеджерам */}
+          {user?.role === 'manager' && (
+            <Tab label={`Архив (${archivedReports.length})`} />
+          )}
         </Tabs>
       </Paper>
 
@@ -296,15 +311,19 @@ const ReportList = () => {
                 Нет отчетов
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Создайте первый отчет
+                {user?.role === 'manager' 
+                  ? 'Создайте первый отчет' 
+                  : 'Отчеты еще не созданы'}
               </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setGenerateDialogOpen(true)}
-              >
-                Создать отчет
-              </Button>
+              {user?.role === 'manager' && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setGenerateDialogOpen(true)}
+                >
+                  Создать отчет
+                </Button>
+              )}
             </Paper>
           ) : (
             <Grid container spacing={3}>
@@ -321,12 +340,15 @@ const ReportList = () => {
                             {getReportTypeLabel(report.report_type)}
                           </Typography>
                         </Box>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleMenuOpen(e, report)}
-                        >
-                          <MoreIcon />
-                        </IconButton>
+                        {/* Кнопка меню действий показывается только менеджерам */}
+                        {user?.role === 'manager' && (
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuOpen(e, report)}
+                          >
+                            <MoreIcon />
+                          </IconButton>
+                        )}
                       </Box>
 
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -420,20 +442,27 @@ const ReportList = () => {
                       )}
                     </CardContent>
                     <CardActions>
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        onClick={() => {
-                          setReportForm({
-                            ...reportForm,
-                            report_type: template.template_type,
-                            name: template.name
-                          });
-                          setGenerateDialogOpen(true);
-                        }}
-                      >
-                        Использовать шаблон
-                      </Button>
+                      {/* Кнопка использования шаблона показывается только менеджерам */}
+                      {user?.role === 'manager' ? (
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          onClick={() => {
+                            setReportForm({
+                              ...reportForm,
+                              report_type: template.template_type,
+                              name: template.name
+                            });
+                            setGenerateDialogOpen(true);
+                          }}
+                        >
+                          Использовать шаблон
+                        </Button>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
+                          Доступно только менеджерам
+                        </Typography>
+                      )}
                     </CardActions>
                   </Card>
                 </Grid>
@@ -443,7 +472,7 @@ const ReportList = () => {
         </>
       )}
 
-      {tabValue === 2 && (
+      {tabValue === 2 && user?.role === 'manager' && (
         <>
           {archivedReports.length === 0 ? (
             <Paper sx={{ p: 4, textAlign: 'center' }}>
@@ -496,67 +525,69 @@ const ReportList = () => {
         </>
       )}
 
-      {/* Диалог генерации отчета */}
-      <Dialog open={generateDialogOpen} onClose={() => setGenerateDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Создание отчета</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              fullWidth
-              label="Название отчета"
-              value={reportForm.name}
-              onChange={(e) => setReportForm({...reportForm, name: e.target.value})}
-              placeholder="Введите название отчета"
-            />
-            
-            <FormControl fullWidth>
-              <InputLabel>Тип отчета</InputLabel>
-              <Select
-                value={reportForm.report_type}
-                label="Тип отчета"
-                onChange={(e) => setReportForm({...reportForm, report_type: e.target.value})}
-              >
-                <SelectMenuItem value="projects">По проектам</SelectMenuItem>
-                <SelectMenuItem value="tasks">По задачам</SelectMenuItem>
-                <SelectMenuItem value="employees">По загрузке сотрудников</SelectMenuItem>
-                <SelectMenuItem value="tasks_period">Отчет по выполнению задач за период</SelectMenuItem>
-                <SelectMenuItem value="summary">Сводный отчет по деятельности агентства</SelectMenuItem>
-              </Select>
-            </FormControl>
-
-            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ru}>
-              <DatePicker
-                label="Дата начала"
-                value={reportForm.start_date}
-                onChange={(date) => setReportForm({...reportForm, start_date: date})}
-                renderInput={(params) => <TextField {...params} fullWidth />}
+      {/* Диалог генерации отчета - только для менеджеров */}
+      {user?.role === 'manager' && (
+        <Dialog open={generateDialogOpen} onClose={() => setGenerateDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Создание отчета</DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Название отчета"
+                value={reportForm.name}
+                onChange={(e) => setReportForm({...reportForm, name: e.target.value})}
+                placeholder="Введите название отчета"
               />
               
-              <DatePicker
-                label="Дата окончания"
-                value={reportForm.end_date}
-                onChange={(date) => setReportForm({...reportForm, end_date: date})}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-              />
-            </LocalizationProvider>
+              <FormControl fullWidth>
+                <InputLabel>Тип отчета</InputLabel>
+                <Select
+                  value={reportForm.report_type}
+                  label="Тип отчета"
+                  onChange={(e) => setReportForm({...reportForm, report_type: e.target.value})}
+                >
+                  <SelectMenuItem value="projects">По проектам</SelectMenuItem>
+                  <SelectMenuItem value="tasks">По задачам</SelectMenuItem>
+                  <SelectMenuItem value="employees">По загрузке сотрудников</SelectMenuItem>
+                  <SelectMenuItem value="tasks_period">Отчет по выполнению задач за период</SelectMenuItem>
+                  <SelectMenuItem value="summary">Сводный отчет по деятельности агентства</SelectMenuItem>
+                </Select>
+              </FormControl>
 
-            <Typography variant="caption" color="text.secondary">
-              Отчет будет сгенерирован в формате PDF
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setGenerateDialogOpen(false)}>Отмена</Button>
-          <Button 
-            onClick={handleGenerate} 
-            variant="contained"
-            disabled={generating}
-            startIcon={generating ? <CircularProgress size={20} /> : null}
-          >
-            {generating ? 'Генерация...' : 'Создать отчет'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ru}>
+                <DatePicker
+                  label="Дата начала"
+                  value={reportForm.start_date}
+                  onChange={(date) => setReportForm({...reportForm, start_date: date})}
+                  renderInput={(params) => <TextField {...params} fullWidth />}
+                />
+                
+                <DatePicker
+                  label="Дата окончания"
+                  value={reportForm.end_date}
+                  onChange={(date) => setReportForm({...reportForm, end_date: date})}
+                  renderInput={(params) => <TextField {...params} fullWidth />}
+                />
+              </LocalizationProvider>
+
+              <Typography variant="caption" color="text.secondary">
+                Отчет будет сгенерирован в формате PDF
+              </Typography>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setGenerateDialogOpen(false)}>Отмена</Button>
+            <Button 
+              onClick={handleGenerate} 
+              variant="contained"
+              disabled={generating}
+              startIcon={generating ? <CircularProgress size={20} /> : null}
+            >
+              {generating ? 'Генерация...' : 'Создать отчет'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* Диалог просмотра отчета */}
       <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="md" fullWidth>
@@ -602,32 +633,34 @@ const ReportList = () => {
         )}
       </Dialog>
 
-      {/* Меню действий с отчетом */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={() => {
-          handleView(selectedReport);
-          handleMenuClose();
-        }}>
-          <ViewIcon fontSize="small" sx={{ mr: 1 }} />
-          Подробнее
-        </MenuItem>
-        <MenuItem onClick={() => handleDownload(selectedReport?.id)}>
-          <DownloadIcon fontSize="small" sx={{ mr: 1 }} />
-          Скачать
-        </MenuItem>
-        <MenuItem onClick={handleArchive}>
-          <ArchiveIcon fontSize="small" sx={{ mr: 1 }} />
-          Архивировать
-        </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-          Удалить
-        </MenuItem>
-      </Menu>
+      {/* Меню действий с отчетом - только для менеджеров */}
+      {user?.role === 'manager' && (
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={() => {
+            handleView(selectedReport);
+            handleMenuClose();
+          }}>
+            <ViewIcon fontSize="small" sx={{ mr: 1 }} />
+            Подробнее
+          </MenuItem>
+          <MenuItem onClick={() => handleDownload(selectedReport?.id)}>
+            <DownloadIcon fontSize="small" sx={{ mr: 1 }} />
+            Скачать
+          </MenuItem>
+          <MenuItem onClick={handleArchive}>
+            <ArchiveIcon fontSize="small" sx={{ mr: 1 }} />
+            Архивировать
+          </MenuItem>
+          <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+            <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+            Удалить
+          </MenuItem>
+        </Menu>
+      )}
     </Box>
   );
 };

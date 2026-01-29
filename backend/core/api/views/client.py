@@ -10,21 +10,28 @@ from ..permissions import CanViewClient, CanEditClient
 class ClientViewSet(viewsets.ModelViewSet):
     queryset = Client.objects.filter(is_active=True, is_archived=False)
     serializer_class = ClientSerializer
-    permission_classes = [permissions.IsAuthenticated, CanViewClient]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['is_active']
-    search_fields = ['name', 'contact_person', 'email', 'phone']
-    ordering_fields = ['name', 'created_at']
+    
+    def get_permissions(self):
+        """
+        Настройка разрешений в зависимости от действия:
+        - Просмотр: директор ИЛИ менеджер
+        - Создание/редактирование/удаление: директор ИЛИ менеджер
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'archive', 'restore']:
+            permission_classes = [permissions.IsAuthenticated, CanEditClient]
+        else:
+            permission_classes = [permissions.IsAuthenticated, CanViewClient]
+        return [permission() for permission in permission_classes]
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return ClientDetailSerializer
         return ClientSerializer
     
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy', 'archive']:
-            self.permission_classes = [permissions.IsAuthenticated, CanEditClient]
-        return super().get_permissions()
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_active', 'is_archived']
+    search_fields = ['name', 'contact_person', 'email', 'phone']
+    ordering_fields = ['name', 'created_at']
     
     def get_queryset(self):
         """Фильтрация по правам доступа"""
@@ -39,7 +46,7 @@ class ClientViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def active(self, request):
         """Активные клиенты"""
-        clients = self.get_queryset().filter(is_active=True)
+        clients = self.get_queryset().filter(is_active=True, is_archived=False)
         serializer = self.get_serializer(clients, many=True)
         return Response(serializer.data)
     

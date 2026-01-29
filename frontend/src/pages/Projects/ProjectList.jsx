@@ -28,6 +28,10 @@ import {
   DialogActions,
   DialogContentText,
   Snackbar,
+  FormControl,
+  InputLabel,
+  Select,
+  OutlinedInput,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -40,6 +44,7 @@ import {
   RestoreFromTrash as RestoreIcon,
   Delete as DeleteIcon,
   ArchiveOutlined as ArchiveOutlinedIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { projectsAPI } from '../../api/projects';
@@ -54,9 +59,10 @@ const ProjectList = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [tabValue, setTabValue] = useState(0); // 0 - активные, 1 - архивные
+  const [tabValue, setTabValue] = useState(0);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -64,6 +70,30 @@ const ProjectList = () => {
     message: '',
     severity: 'info',
   });
+
+  const statusLabels = {
+    planned: 'Планируется',
+    in_work: 'В работе',
+    on_approval: 'На согласовании',
+    completed: 'Завершен',
+    paused: 'Приостановлен',
+  };
+
+  const priorityLabels = {
+    low: 'Низкий',
+    medium: 'Средний',
+    high: 'Высокий',
+    critical: 'Критический',
+  };
+
+  const statusOptions = [
+    { value: '', label: 'Все статусы' },
+    { value: 'planned', label: 'Планируется' },
+    { value: 'in_work', label: 'В работе' },
+    { value: 'on_approval', label: 'На согласовании' },
+    { value: 'completed', label: 'Завершен' },
+    { value: 'paused', label: 'Приостановлен' },
+  ];
 
   useEffect(() => {
     fetchProjects();
@@ -74,7 +104,6 @@ const ProjectList = () => {
     setError(null);
     try {
       if (tabValue === 0) {
-        // Загружаем активные проекты
         const response = await projectsAPI.getAll();
         let projectsArray = [];
         
@@ -84,11 +113,9 @@ const ProjectList = () => {
           projectsArray = response.results || response.data || Object.values(response);
         }
         
-        // Фильтруем только активные проекты
         const active = projectsArray.filter(project => project.is_active !== false);
         setActiveProjects(Array.isArray(active) ? active : []);
       } else {
-        // Загружаем архивные проекты
         const archived = await projectsAPI.getArchived();
         setArchivedProjects(Array.isArray(archived) ? archived : []);
       }
@@ -198,6 +225,13 @@ const ProjectList = () => {
     setTabValue(newValue);
     setPage(0);
     setSearch('');
+    setStatusFilter(''); // Сбрасываем фильтр статуса при переключении вкладок
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+    setPage(0);
   };
 
   const getFilteredProjects = () => {
@@ -206,30 +240,22 @@ const ProjectList = () => {
     return projects.filter(project => {
       if (!project) return false;
       
+      // Фильтрация по поисковому запросу
       const searchLower = search.toLowerCase();
       const title = (project.title || '').toLowerCase();
       const clientName = (project.client?.name || project.client_name || '').toLowerCase();
       const managerName = (project.manager?.full_name || project.manager_name || '').toLowerCase();
       
-      return title.includes(searchLower) || 
-             clientName.includes(searchLower) || 
-             managerName.includes(searchLower);
+      const searchMatch = 
+        title.includes(searchLower) || 
+        clientName.includes(searchLower) || 
+        managerName.includes(searchLower);
+      
+      // Фильтрация по статусу
+      const statusMatch = !statusFilter || project.status === statusFilter;
+      
+      return searchMatch && statusMatch;
     });
-  };
-
-  const statusLabels = {
-    planned: 'Планируется',
-    in_work: 'В работе',
-    on_approval: 'На согласовании',
-    completed: 'Завершен',
-    paused: 'Приостановлен',
-  };
-
-  const priorityLabels = {
-    low: 'Низкий',
-    medium: 'Средний',
-    high: 'Высокий',
-    critical: 'Критический',
   };
 
   const filteredProjects = getFilteredProjects();
@@ -323,9 +349,33 @@ const ProjectList = () => {
               }}
               sx={{ flexGrow: 1 }}
             />
-            <Button startIcon={<FilterIcon />} variant="outlined">
-              Фильтры
-            </Button>
+            
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel id="status-filter-label">Статус</InputLabel>
+              <Select
+                labelId="status-filter-label"
+                id="status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                input={<OutlinedInput label="Статус" />}
+              >
+                {statusOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {(search || statusFilter) && (
+              <Button
+                startIcon={<ClearIcon />}
+                variant="outlined"
+                onClick={handleClearFilters}
+              >
+                Сбросить
+              </Button>
+            )}
           </Box>
         </Box>
       </Paper>
@@ -348,13 +398,23 @@ const ProjectList = () => {
               <TableRow>
                 <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                   <Typography color="text.secondary">
-                    {search
+                    {search || statusFilter
                       ? 'Проекты не найдены'
                       : tabValue === 0
                       ? 'Нет активных проектов'
                       : 'Нет архивных проектов'}
                   </Typography>
-                  {tabValue === 0 && filteredProjects.length === 0 && !search && (
+                  {(search || statusFilter) && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<ClearIcon />}
+                      onClick={handleClearFilters}
+                      sx={{ mt: 2 }}
+                    >
+                      Сбросить фильтры
+                    </Button>
+                  )}
+                  {tabValue === 0 && filteredProjects.length === 0 && !search && !statusFilter && (
                     <Button
                       variant="outlined"
                       startIcon={<AddIcon />}
@@ -421,14 +481,12 @@ const ProjectList = () => {
         />
       </TableContainer>
 
-      {/* Меню действий для проектов */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
         {tabValue === 0 ? (
-          // Меню для активных проектов
           <>
             <MenuItem onClick={handleView}>
               <ViewIcon fontSize="small" sx={{ mr: 1 }} />
@@ -444,7 +502,6 @@ const ProjectList = () => {
             </MenuItem>
           </>
         ) : (
-          // Меню для архивных проектов
           <>
             <MenuItem onClick={handleView}>
               <ViewIcon fontSize="small" sx={{ mr: 1 }} />
@@ -462,7 +519,6 @@ const ProjectList = () => {
         )}
       </Menu>
 
-      {/* Диалог восстановления */}
       <Dialog
         open={restoreDialogOpen}
         onClose={() => setRestoreDialogOpen(false)}
@@ -487,7 +543,6 @@ const ProjectList = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Диалог удаления */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
@@ -512,7 +567,6 @@ const ProjectList = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar для уведомлений */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}

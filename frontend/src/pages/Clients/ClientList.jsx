@@ -31,7 +31,6 @@ import {
   Phone as PhoneIcon,
   Email as EmailIcon,
   Business as BusinessIcon,
-  MoreVert as MoreIcon,
   Edit as EditIcon,
   Archive as ArchiveIcon,
   Delete as DeleteIcon,
@@ -209,18 +208,6 @@ const ClientList = () => {
     navigate(`/clients/${clientId}`);
   };
 
-  const handleViewDetails = (clientId) => {
-    navigate(`/clients/${clientId}/view`);
-  };
-
-  const openDeleteDialog = (clientId, clientName) => {
-    setDeleteDialog({ open: true, clientId, clientName });
-  };
-
-  const closeDeleteDialog = () => {
-    setDeleteDialog({ open: false, clientId: null, clientName: '' });
-  };
-
   // Фильтрация клиентов по поисковому запросу
   const filteredClients = clients.filter(client =>
     (client.name?.toLowerCase() || '').includes(search.toLowerCase()) ||
@@ -302,7 +289,7 @@ const ClientList = () => {
               <TableCell>Контакты</TableCell>
               <TableCell>Проекты</TableCell>
               <TableCell>Статус</TableCell>
-              <TableCell align="center">Действия</TableCell>
+              <TableCell align="center">Управление</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -474,7 +461,7 @@ const ClientList = () => {
                         <span>
                           <IconButton
                             size="small"
-                            onClick={() => openDeleteDialog(client.id, client.name)}
+                            onClick={() => setDeleteDialog({ open: true, clientId: client.id, clientName: client.name })}
                             disabled={deleteLoading[client.id]}
                             color="error"
                           >
@@ -485,15 +472,6 @@ const ClientList = () => {
                             )}
                           </IconButton>
                         </span>
-                      </Tooltip>
-                      
-                      <Tooltip title="Подробнее">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewDetails(client.id)}
-                        >
-                          <MoreIcon fontSize="small" />
-                        </IconButton>
                       </Tooltip>
                     </Box>
                   </TableCell>
@@ -523,7 +501,7 @@ const ClientList = () => {
       {/* Диалог удаления */}
       <Dialog
         open={deleteDialog.open}
-        onClose={closeDeleteDialog}
+        onClose={() => setDeleteDialog({ open: false, clientId: null, clientName: '' })}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
@@ -537,7 +515,8 @@ const ClientList = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeDeleteDialog} disabled={deleteLoading[deleteDialog.clientId]}>
+          <Button onClick={() => setDeleteDialog({ open: false, clientId: null, clientName: '' })} 
+                  disabled={deleteLoading[deleteDialog.clientId]}>
             Отмена
           </Button>
           <Button 

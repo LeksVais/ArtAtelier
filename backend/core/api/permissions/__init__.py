@@ -173,13 +173,14 @@ class CanEditClient(permissions.BasePermission):
     """
     Разрешение на редактирование клиентов
     ТЗ: 4.1.1 Редактирование клиентов - только директор
+    ИЗМЕНЕНО: Менеджер тоже может создавать и редактировать клиентов
     """
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
         
-        # Только директор может создавать/редактировать клиентов
-        if hasattr(request.user, 'role') and request.user.role == 'director':
+        # Директор ИЛИ менеджер может создавать/редактировать клиентов
+        if hasattr(request.user, 'role') and request.user.role in ['director', 'manager']:
             return True
         
         return False

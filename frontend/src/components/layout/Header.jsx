@@ -9,11 +9,9 @@ import {
   Tooltip,
 } from '@mui/material';
 import {
-  Notifications as NotificationsIcon,
   Settings as SettingsIcon,
   ExitToApp as LogoutIcon,
 } from '@mui/icons-material';
-import NotificationCenter from '../NotificationCenter';
 
 const Header = ({ user, onLogout }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -33,8 +31,6 @@ const Header = ({ user, onLogout }) => {
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <NotificationCenter />
-      
       <IconButton color="inherit" onClick={() => window.location.href = '/profile'}>
         <SettingsIcon />
       </IconButton>

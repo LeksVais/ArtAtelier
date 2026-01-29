@@ -18,7 +18,6 @@ import {
   Assignment,
   Group,
   People,
-  // Удалено: AttachFile - вкладка Файлов
   Assessment,
   Settings,
 } from '@mui/icons-material';
@@ -46,32 +45,35 @@ const Layout = () => {
   const getMenuItems = () => {
     const baseItems = [
       { text: 'Главная', icon: <Dashboard />, path: '/dashboard', roles: ['director', 'manager', 'designer', 'copywriter'] },
-      { text: 'Мои задачи', icon: <Assignment />, path: '/tasks', roles: ['director', 'manager', 'designer', 'copywriter'] },
       { text: 'Профиль', icon: <Settings />, path: '/profile', roles: ['director', 'manager', 'designer', 'copywriter'] },
     ];
 
     const roleSpecificItems = [];
     
-    // Руководитель (director) видит всё
+    // Руководитель (director) видит только сотрудников и отчеты (только просмотр)
     if (user?.role === 'director') {
       roleSpecificItems.push(
-        { text: 'Проекты', icon: <Folder />, path: '/projects', roles: ['director'] },
-        { text: 'Клиенты', icon: <Group />, path: '/clients', roles: ['director', 'manager'] },
         { text: 'Сотрудники', icon: <People />, path: '/employees', roles: ['director'] },
         { text: 'Отчеты', icon: <Assessment />, path: '/reports', roles: ['director'] }
       );
     }
     
-    // Менеджер видит проекты, клиентов
+    // Менеджер видит проекты, клиентов, задачи и отчеты (с созданием)
     if (user?.role === 'manager') {
       roleSpecificItems.push(
-        { text: 'Проекты', icon: <Folder />, path: '/projects', roles: ['director', 'manager'] },
-        { text: 'Клиенты', icon: <Group />, path: '/clients', roles: ['director', 'manager'] },
-        { text: 'Отчеты', icon: <Assessment />, path: '/reports', roles: ['director', 'manager'] }
+        { text: 'Проекты', icon: <Folder />, path: '/projects', roles: ['manager'] },
+        { text: 'Клиенты', icon: <Group />, path: '/clients', roles: ['manager'] },
+        { text: 'Задачи', icon: <Assignment />, path: '/tasks', roles: ['manager'] },
+        { text: 'Отчеты', icon: <Assessment />, path: '/reports', roles: ['manager'] }
       );
     }
     
-    // Дизайнеры и копирайтеры не видят дополнительные пункты
+    // Дизайнеры и копирайтеры видят только свои задачи
+    if (user?.role === 'designer' || user?.role === 'copywriter') {
+      roleSpecificItems.push(
+        { text: 'Мои задачи', icon: <Assignment />, path: '/tasks', roles: ['designer', 'copywriter'] }
+      );
+    }
     
     // Фильтруем пункты, доступные для текущей роли
     const allItems = [...baseItems, ...roleSpecificItems];

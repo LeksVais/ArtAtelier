@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -9,10 +8,6 @@ import {
   Avatar,
   Grid,
   Divider,
-  Switch,
-  FormControlLabel,
-  Card,
-  CardContent,
   Alert,
   Tabs,
   Tab,
@@ -26,7 +21,6 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   Security as SecurityIcon,
-  Notifications as NotificationsIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
@@ -59,15 +53,6 @@ const Profile = () => {
     new: false,
     confirm: false,
   });
-  const [notificationSettings, setNotificationSettings] = useState({
-    email_project_updates: true,
-    email_task_assignments: true,
-    email_deadline_reminders: true,
-    email_weekly_digest: false,
-    push_notifications: true,
-    push_important_only: false,
-  });
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   const {
@@ -92,7 +77,6 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       resetProfile(user);
-      setTwoFactorEnabled(user.two_factor_enabled || false);
     }
   }, [user, resetProfile]);
 
@@ -123,26 +107,6 @@ const Profile = () => {
     }
   };
 
-  const handleNotificationChange = (setting) => (event) => {
-    setNotificationSettings({
-      ...notificationSettings,
-      [setting]: event.target.checked,
-    });
-  };
-
-  const handleTwoFactorToggle = async () => {
-    try {
-      await authAPI.toggleTwoFactor(user.id);
-      setTwoFactorEnabled(!twoFactorEnabled);
-      setSuccessMessage(`Двухфакторная аутентификация ${!twoFactorEnabled ? 'включена' : 'выключена'}`);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      console.error('Error toggling 2FA:', error);
-      setSuccessMessage('Ошибка при изменении настроек 2FA');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    }
-  };
-
   const handleAvatarChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -157,18 +121,6 @@ const Profile = () => {
     } catch (error) {
       console.error('Error updating avatar:', error);
       setSuccessMessage('Ошибка при обновлении аватара');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    }
-  };
-
-  const handleSaveNotificationSettings = async () => {
-    try {
-      // Сохранение настроек уведомлений
-      setSuccessMessage('Настройки уведомлений сохранены');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      console.error('Error saving notification settings:', error);
-      setSuccessMessage('Ошибка при сохранении настроек уведомлений');
       setTimeout(() => setSuccessMessage(''), 3000);
     }
   };
@@ -194,7 +146,6 @@ const Profile = () => {
         >
           <Tab icon={<PersonIcon />} label="Личные данные" />
           <Tab icon={<SecurityIcon />} label="Безопасность" />
-          <Tab icon={<NotificationsIcon />} label="Уведомления" />
         </Tabs>
       </Paper>
 
@@ -449,128 +400,23 @@ const Profile = () => {
 
           <Divider sx={{ my: 3 }} />
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Двухфакторная аутентификация
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Повысьте безопасность вашего аккаунта
-              </Typography>
-            </Box>
-            <Switch
-              checked={twoFactorEnabled}
-              onChange={handleTwoFactorToggle}
-              color="primary"
-            />
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Рекомендации по безопасности
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              • Используйте надежный пароль, содержащий буквы, цифры и специальные символы
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              • Никогда не передавайте свой пароль третьим лицам
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              • Регулярно меняйте пароль для повышения безопасности
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              • Выходите из системы при использовании общественных компьютеров
+            </Typography>
           </Box>
-        </Paper>
-      )}
-
-      {tabValue === 2 && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>
-            Настройки уведомлений
-          </Typography>
-
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Email уведомления
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={notificationSettings.email_project_updates}
-                            onChange={handleNotificationChange('email_project_updates')}
-                          />
-                        }
-                        label="Обновления проектов"
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={notificationSettings.email_task_assignments}
-                            onChange={handleNotificationChange('email_task_assignments')}
-                          />
-                        }
-                        label="Назначение задач"
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={notificationSettings.email_deadline_reminders}
-                            onChange={handleNotificationChange('email_deadline_reminders')}
-                          />
-                        }
-                        label="Напоминания о дедлайнах"
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={notificationSettings.email_weekly_digest}
-                            onChange={handleNotificationChange('email_weekly_digest')}
-                          />
-                        }
-                        label="Еженедельная сводка"
-                      />
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Push уведомления
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={notificationSettings.push_notifications}
-                            onChange={handleNotificationChange('push_notifications')}
-                          />
-                        }
-                        label="Включить push-уведомления"
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={notificationSettings.push_important_only}
-                            onChange={handleNotificationChange('push_important_only')}
-                            disabled={!notificationSettings.push_notifications}
-                          />
-                        }
-                        label="Только важные уведомления"
-                      />
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Button variant="contained" onClick={handleSaveNotificationSettings}>
-                Сохранить настройки
-              </Button>
-            </Grid>
-          </Grid>
         </Paper>
       )}
     </Box>
